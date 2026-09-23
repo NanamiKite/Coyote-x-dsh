@@ -1,6 +1,6 @@
 {
   "name": "coyote-x-dsh",
-  "version": "0.2.0",
+  "version": "1.0.0",
   "description": "郊狼xDSH（Coyote x DSH）— AI 接入的体感文字冒险 DeepSeek Harness MCP 插件，带郊狼 Coyote V2/V3 有界 BLE 反馈",
   "private": true,
   "license": "MIT",
