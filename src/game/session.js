@@ -12,7 +12,7 @@
 const { loadPacks } = require("./scenarios");
 const { GameState } = require("./GameState");
 const { FeedbackRuntime } = require("./FeedbackRuntime");
-const { planMove, normalizeConfig } = require("./rules");
+const { planMove, normalizeConfig, defaults: RULE_DEFAULTS } = require("./rules");
 const { createArmChecker, armSummary, disarm } = require("./arm");
 
 const empty = { type: "object", properties: {}, additionalProperties: false };
@@ -24,7 +24,7 @@ const empty = { type: "object", properties: {}, additionalProperties: false };
 const TOOL_DEFINITIONS = [
   {
     name: "tentacle_status",
-    description: "读取连接、武装、冷却、运行中反馈、当前场景阶段与最近事件。只读，不触发硬件。",
+    description: "读取连接、武装、冷却、运行中反馈、当前场景阶段与最近事件；guidance 列出用户开局前需完成的引导待办（未武装/未连接/出厂默认配置）。只读，不触发硬件。",
     inputSchema: empty,
   },
   {
@@ -108,7 +108,7 @@ const TOOL_DEFINITIONS = [
 const INSTRUCTIONS = [
   "你主持一场纯文字冒险（场景包驱动），并通过有界反馈工具增强沉浸感。",
   "规则：",
-  "1. 开局先 tentacle_status，再 tentacle_scenario_list 选包，tentacle_scenario_start 开局。",
+  "1. 仅当用户提出要玩这场文字冒险时（要求开始/继续开局）：先 tentacle_status——guidance 非空就在开局前逐条一行地引导用户完成（未武装给 `node bin/arm.js on` 命令、未连接提醒打开设备与蓝牙、出厂默认提示可在 DSH 设置页调整；用户说跳过就跳过）；guidance 为空则直接 tentacle_scenario_list 选包、tentacle_scenario_start 开局。用户没提出游玩请求时，不要主动提起武装或设置。",
   "2. 每轮先 tentacle_state_read 读真实状态再叙述；状态推进用 tentacle_state_update / tentacle_state_advance 持久化，不要凭空 invent 进度。",
   "3. 需要物理反馈时 tentacle_feedback_list 看招式，再 tentacle_feedback_start 执行；招式输出受本地强度/时长/冷却上限钳制。",
   "4. 反馈工具需要用户本地武装（arm）。若返回未武装，告知用户运行 `node bin/arm.js on`，不要反复重试，更不要假装输出已发生。",
@@ -176,6 +176,26 @@ function createSession(options = {}) {
 
   controller.on("connectionChanged", c => log("connection:", c.state, c.message));
 
+  /*
+   * 开局引导待办（结构化，支撑 INSTRUCTIONS 规则 1）：
+   * 仅在用户提出要玩时由模型转述；用户没提出游玩请求就不主动提。
+   * 全部就绪时返回空数组，模型直接开局、不再重复引导。
+   */
+  function buildGuidance(payload) {
+    const items = [];
+    if (!payload.armed || payload.armed.armed !== true) {
+      items.push("未武装：引导用户在设备所在电脑运行 `node bin/arm.js on --minutes 30`（AI 无法自行武装；`node bin/arm.js off` 撤销，到期自动失效）。");
+    }
+    if (!payload.connected) {
+      items.push("设备未连接：提醒用户打开设备并确认系统蓝牙可用，再调用 tentacle_connect。");
+    }
+    const r = payload.rules || {};
+    if (Object.keys(RULE_DEFAULTS).every(k => r[k] === RULE_DEFAULTS[k])) {
+      items.push("安全配置仍为出厂默认：提示可在 DSH 设置页（Settings → tentacle 表单）调整强度上限/时长/冷却/通道；用户表示不用调就跳过。");
+    }
+    return items;
+  }
+
   function statusPayload() {
     const running = runtime.running ? {
       name: runtime.running.name,
@@ -188,7 +208,7 @@ function createSession(options = {}) {
       source: runtime.running.source,
       endsInMs: Math.max(0, runtime.running.endsAt - Date.now()),
     } : null;
-    return {
+    const payload = {
       backend,
       connected: !!controller.connected,
       connection: {
@@ -214,6 +234,8 @@ function createSession(options = {}) {
       packErrors,
       recentEvents: runtime.events.slice(0, 8),
     };
+    payload.guidance = buildGuidance(payload);
+    return payload;
   }
 
   function requirePack(id) {

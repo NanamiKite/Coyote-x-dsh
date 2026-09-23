@@ -2,7 +2,7 @@
 
 > 让每一段剧情都留下切身印象。
 
-**郊狼（Coyote）× DeepSeek Harness** 的联名插件：AI 接入的**体感文字冒险** MCP 插件。
+AI 接入的**体感文字冒险** MCP 插件。
 AI 主持场景包驱动的角色扮演剧情，用实时文字状态推进故事，
 并通过**郊狼 Coyote V2/V3 外置反馈设备**执行**有界物理反馈**增强沉浸感。
 
@@ -42,8 +42,19 @@ dsh plugin --profile web add D:/path/to/Coyote-x-dsh
 
 ## 安全配置
 
-下表字段写在 [cordis.patch.yml](cordis.patch.yml)（或 profile 同 id 覆盖行）的 `config:` 里，
-由 `src/plugin/index.mjs` 导出的 Config schema 校验：**越界值直接启动报错，不是静默钳制**。
+**推荐：在 DSH Web 的设置（Settings）页里直接调。** 六个可调字段
+（强度、强度上限、单次时长、时长上限、冷却、通道）在插件 Config 中
+标注为 `.volatile()`，会以 `tentacle` 表单出现在设置页：保存即完整
+schema 校验（越界直接拒绝）、即持久化到 profile 的 `cordis.patch.yml`、
+**即时生效**——不重挂插件、不重启、不中断正在运行的有界反馈
+（当前计划按启动参数跑完即止，下一次执行用新值）。
+`backend` 不在表单内（换后端需要重建控制器），改它编辑 YAML 即可
+（loader 自动重挂，先归零）。
+
+其余方式（等价，任选）：字段写在 [cordis.patch.yml](cordis.patch.yml)
+（包内，重启生效）或 profile 同 id 覆盖行（热重载）的 `config:` 里，
+由 `src/plugin/index.mjs` 导出的 Config schema 校验：**越界值直接
+拒绝，不是静默钳制**。
 这些是本机规则天花板；AI 只有工具调用权，接触不到该配置层。
 
 | 字段 | 默认 | 硬上限 | 含义 |
