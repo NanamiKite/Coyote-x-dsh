@@ -25,7 +25,7 @@ AI 主持场景包驱动的角色扮演剧情，用实时文字状态推进故�
 
 ```sh
 # git 仓库（推荐）
-dsh plugin --profile web add github:<owner>/Coyote-x-dsh#main
+dsh plugin --profile web add github:https://github.com/NanamiKite/Coyote-x-dsh
 
 # 本地目录
 dsh plugin --profile web add D:/path/to/Coyote-x-dsh
