@@ -2,16 +2,23 @@
 #
 # 本文件由 package.json 的 dsh.bundle.patch 声明；
 # `dsh plugin --profile web add <本包>` 安装后自动叠入配置层。
-# 相对插件路径按本文件所在目录解析（可搬迁，无需绝对路径）。
+#
+# name 用**裸包名**（不是相对路径）：两个机制都依赖它——
+#   1) host 侧经 Node 解析（profile 的 node_modules）找到本包，
+#      exports["."] 指向 src/plugin/index.mjs；
+#   2) dsh-client-modules 只把**说明符恰为包名**的 Loader 行
+#      挂上浏览器半侧（package.json 的 dsh.client），相对路径不行。
+# 两个条件现在都由 `coyote-x-dsh` 一个说明符满足。
 #
 # 安全上限：下面 config: 的每个字段都受 src/plugin/index.mjs 的
 # Config schema 硬校验（越界 = 启动报错），AI 工具层无法修改；
 # 运行时还有 rules.normalizeConfig 与 CoyoteSafety 两层独立钳制。
-# 想调整本机上限，复制对应字段到 profile 的 cordis.patch.yml 覆盖即可
-# （同 id 行后层整块替换前层 config）。
+# 想调整本机上限：DSH 插件管理器 → 本包 → tentacle 行的「配置」页
+# （浏览器半侧 lib/client.js 渲染的六字段表单，保存即时生效）；
+# 也可以用 profile 的 cordis.patch.yml 覆盖（同 id 行后层整块替换）。
 - insert:
     - id: tentacle
-      name: ./src/plugin/index.mjs
+      name: coyote-x-dsh
       config:
         # ble = 真机（需设备所在电脑运行）；无硬件调试改 mock
         backend: ble

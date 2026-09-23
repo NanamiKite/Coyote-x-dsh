@@ -7,24 +7,32 @@
   "engines": {
     "node": ">=20"
   },
-  "main": "src/mcp/server.js",
+  "main": "./src/plugin/index.mjs",
   "bin": {
     "tentacle-arm": "bin/arm.js"
   },
   "exports": {
-    ".": "./src/mcp/server.js",
+    ".": "./src/plugin/index.mjs",
     "./plugin": "./src/plugin/index.mjs",
+    "./client": "./lib/client.js",
+    "./src/mcp/server.js": "./src/mcp/server.js",
     "./cordis.patch.yml": "./cordis.patch.yml",
     "./package.json": "./package.json"
   },
   "scripts": {
     "start": "node src/mcp/server.js",
     "arm": "node bin/arm.js",
-    "test": "node --test tests/core.test.js tests/plugin.test.js"
+    "test": "node --test tests/core.test.js tests/plugin.test.js tests/client.test.js"
   },
   "dsh": {
     "bundle": {
       "patch": "./cordis.patch.yml"
+    },
+    "client": {
+      "inject": [
+        "@deepseek-ai/dsh-client-ui-plugin-manager"
+      ],
+      "platform": "web"
     }
   },
   "dependencies": {

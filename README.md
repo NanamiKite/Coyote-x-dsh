@@ -25,31 +25,36 @@ AI 主持场景包驱动的角色扮演剧情，用实时文字状态推进故�
 
 ```sh
 # git 仓库（推荐）
-dsh plugin --profile web add github:https://github.com/NanamiKite/Coyote-x-dsh
+dsh plugin --profile web add github:NanamiKite/Coyote-x-dsh
 
 # 本地目录
 dsh plugin --profile web add D:/path/to/Coyote-x-dsh
 ```
 
 一条命令完成：pnpm 装包（自动带依赖与 webbluetooth 预编译）→ 读取 package.json 的
-`dsh.bundle.patch` → 叠入 [cordis.patch.yml](cordis.patch.yml) 配置层 → 插件以相对路径注册。
-**装完重启 profile**（Web GUI：插件管理器 → 安装 → 立即启用 → 重启；CLI：`dsh up --profile web --restart`）。
+`dsh.bundle.patch` → 叠入 [cordis.patch.yml](cordis.patch.yml) 配置层 → 插件以
+**裸包名** `coyote-x-dsh` 注册（host 解析与浏览器半侧挂载都要求说明符恰为包名）。
+**装完重启 profile**：Web GUI 插件管理器 → 重启按钮；或停掉 `dsh web` 进程后重新启动。
 加载后模型直接看到 `tentacle_status` 等 11 个工具（非 `mcp__` 前缀——进程内原生注册）。
 
-安全上限在**插件内可配**，见下方「安全配置」；以后调参只需编辑 profile 的
-`cordis.patch.yml` 覆盖 `id: tentacle` 行的 `config:`（配置热重载，改完即生效，
-重载时先归零再换实例）。
+> 以后从 GitHub 更新：再跑一次同一条 `dsh plugin add github:NanamiKite/Coyote-x-dsh`
+> （会重新解析最新提交）→ 重启。lockfile 会锁定提交，只推不重装会一直用旧快照。
 
 ## 安全配置
 
-**推荐：在 DSH Web 的设置（Settings）页里直接调。** 六个可调字段
-（强度、强度上限、单次时长、时长上限、冷却、通道）在插件 Config 中
-标注为 `.volatile()`，会以 `tentacle` 表单出现在设置页：保存即完整
-schema 校验（越界直接拒绝）、即持久化到 profile 的 `cordis.patch.yml`、
-**即时生效**——不重挂插件、不重启、不中断正在运行的有界反馈
-（当前计划按启动参数跑完即止，下一次执行用新值）。
-`backend` 不在表单内（换后端需要重建控制器），改它编辑 YAML 即可
-（loader 自动重挂，先归零）。
+**推荐：在 DSH Web 的插件管理器里直接调。** Web GUI → 插件管理器 →
+本包（`coyote-x-dsh`）→ `tentacle` 行的**配置**按钮 → 六字段表单
+（强度、强度上限、单次时长、时长上限、冷却、通道）：
+
+- 表单由本包的**浏览器半侧**渲染（`lib/client.js`，手写的
+  loader-factory 产物，无构建步骤，随包一起提交）——它往插件管理器的
+  `plugins.row.config` 槽位注册 `coyote-x-dsh#tentacle` 这一行的配置页；
+- 六个字段在插件 Config 中标注为 `.volatile()`：保存即完整 schema
+  校验（越界直接拒绝）、即持久化到 profile 的 `cordis.patch.yml`、
+  **即时生效**——不重挂插件、不重启、不中断正在运行的有界反馈
+  （当前计划按启动参数跑完即止，下一次执行用新值）；
+- `backend` 不在表单内（换后端需要重建控制器），改它编辑 YAML 即可
+  （loader 自动重挂，先归零）。
 
 其余方式（等价，任选）：字段写在 [cordis.patch.yml](cordis.patch.yml)
 （包内，重启生效）或 profile 同 id 覆盖行（热重载）的 `config:` 里，
@@ -107,7 +112,7 @@ AI 请求执行反馈时若返回「未武装」，请自行运行上命令后�
 
 ```sh
 npm install
-npm test              # 15 项测试，mock 后端，无需硬件
+npm test              # 24 项测试，mock 后端，无需硬件
 ```
 
 需要 Node.js 20+。BLE 后端（`webbluetooth`）需要设备所在电脑支持蓝牙；
@@ -183,8 +188,9 @@ MCP 重新连接（stdio）或插件重载（进程内）即加载。`_` 开头�
 
 ```
 Coyote-x-dsh/
-├── package.json                        # dsh.bundle.patch 声明 bundle patch
-├── cordis.patch.yml                    # DSH 配置层：插件注册 + 安全上限默认值
+├── package.json                        # dsh.bundle.patch（配置层）+ dsh.client（浏览器半侧声明）
+├── cordis.patch.yml                    # DSH 配置层：裸包名注册 tentacle 行 + 安全上限默认值
+├── lib/client.js                       # 浏览器半侧：手写 loader-factory 产物，随包提交（无构建）
 ├── bin/arm.js                          # 本地武装 CLI（唯一解锁入口）
 ├── src/
 │   ├── plugin/index.mjs                # DSH 进程内插件：Config schema + 11 工具注册
@@ -207,7 +213,8 @@ Coyote-x-dsh/
 │       └── MockController.js           # 模拟后端（测试 / 无硬件）
 └── tests/
     ├── core.test.js                    # 领域层 + stdio 端到端（11 项）
-    └── plugin.test.js                  # 进程内插件（4 项，假 Cordis ctx）
+    ├── plugin.test.js                  # 进程内插件（6 项，假 Cordis ctx）
+    └── client.test.js                  # 浏览器半侧（7 项，fake loader / React）
 ```
 
 
