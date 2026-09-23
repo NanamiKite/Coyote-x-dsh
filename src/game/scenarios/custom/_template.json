@@ -1,0 +1,38 @@
+{
+  "_comment": "自定义场景包模板。复制本文件改名（小写字母/数字/连字符，去掉 _comment）放入本目录，重启 MCP 连接即加载。字段说明见 README「共创场景」一节。id 相同时自定义包会覆盖同名内置包。",
+  "id": "my-scene",
+  "title": "我的场景标题",
+  "premise": "世界观前言：玩家是谁、在哪、面临什么。1–2000 字。",
+  "narrator": {
+    "persona": "NPC 人设与口吻：你扮演谁、怎么说话。",
+    "rules": [
+      "全程使用游戏内术语描写，不描写现实身体细节。",
+      "每次物理反馈先给剧情理由再执行。",
+      "玩家拒绝时要真正退让，不无视玩家意愿。"
+    ]
+  },
+  "stages": [
+    { "id": "opening", "name": "开场", "hint": "阶段提示，指导 AI 在此阶段讲什么。", "next": "middle" },
+    { "id": "middle", "name": "升温", "hint": "互动升级。", "next": "ending" },
+    { "id": "ending", "name": "结局", "hint": "按状态收尾。", "next": "ended" }
+  ],
+  "state": {
+    "fields": [
+      { "key": "progress", "label": "进度", "type": "int", "min": 0, "max": 10, "default": 0 },
+      { "key": "mood", "label": "NPC 心情", "type": "enum", "values": ["好奇", "愉悦", "不耐"], "default": "好奇" },
+      { "key": "met_player", "name_note": "bool 示例", "type": "bool", "default": false },
+      { "key": "last_event", "label": "最近事件", "type": "text", "default": "" }
+    ]
+  },
+  "moves": [
+    { "id": "soft-touch", "name": "轻触", "description": "一次轻柔的持续接触。", "kind": "sustain", "intensity": 20, "durationMs": 2000, "waveform": "slowPulse" },
+    { "id": "quick-sting", "name": "短刺", "description": "短促的一下。", "kind": "burst", "intensity": 30, "durationMs": 800, "waveform": "pulse" },
+    { "id": "pulsing-wave", "name": "脉涌", "description": "疏密不均的一段，强度在区间内摆动。", "kind": "wave", "intensity": 30, "durationMs": 4000, "waveform": "randomStep", "intensityRange": [8, 30] },
+    { "id": "stage-locked-move", "name": "阶段限定招", "description": "只能在 opening 阶段使用。", "kind": "burst", "intensity": 15, "durationMs": 600, "stageGate": ["opening"] }
+  ],
+  "openings": ["开场白候选之一。", "开场白候选之二。"],
+  "guidelines": [
+    "这是纯文字冒险：所有画面由文字构建，不读取图片。",
+    "反馈招式只从招式表里选，执行前先读 status 确认冷却与武装。"
+  ]
+}

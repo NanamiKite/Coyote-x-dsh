@@ -1,0 +1,36 @@
+{
+  "name": "coyote-x-dsh",
+  "version": "0.2.0",
+  "description": "郊狼xDSH（Coyote x DSH）— AI 接入的体感文字冒险 DeepSeek Harness MCP 插件，带郊狼 Coyote V2/V3 有界 BLE 反馈",
+  "private": true,
+  "license": "MIT",
+  "engines": {
+    "node": ">=20"
+  },
+  "main": "src/mcp/server.js",
+  "bin": {
+    "tentacle-arm": "bin/arm.js"
+  },
+  "exports": {
+    ".": "./src/mcp/server.js",
+    "./plugin": "./src/plugin/index.mjs",
+    "./cordis.patch.yml": "./cordis.patch.yml",
+    "./package.json": "./package.json"
+  },
+  "scripts": {
+    "start": "node src/mcp/server.js",
+    "arm": "node bin/arm.js",
+    "test": "node --test tests/core.test.js tests/plugin.test.js"
+  },
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    }
+  },
+  "dependencies": {
+    "@deepseek-ai/schemastery": "^3.18.4",
+    "@modelcontextprotocol/sdk": "^1.26.0",
+    "webbluetooth": "3.7.0",
+    "zod": "^3.25.76"
+  }
+}

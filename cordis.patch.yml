@@ -1,0 +1,29 @@
+# 郊狼xDSH（Coyote x DSH） · DSH bundle patch
+#
+# 本文件由 package.json 的 dsh.bundle.patch 声明；
+# `dsh plugin --profile web add <本包>` 安装后自动叠入配置层。
+# 相对插件路径按本文件所在目录解析（可搬迁，无需绝对路径）。
+#
+# 安全上限：下面 config: 的每个字段都受 src/plugin/index.mjs 的
+# Config schema 硬校验（越界 = 启动报错），AI 工具层无法修改；
+# 运行时还有 rules.normalizeConfig 与 CoyoteSafety 两层独立钳制。
+# 想调整本机上限，复制对应字段到 profile 的 cordis.patch.yml 覆盖即可
+# （同 id 行后层整块替换前层 config）。
+- insert:
+    - id: tentacle
+      name: ./src/plugin/index.mjs
+      config:
+        # ble = 真机（需设备所在电脑运行）；无硬件调试改 mock
+        backend: ble
+        # 输出通道：A / B / AB（双通道同发）
+        channel: A
+        # 默认强度挡位（0–200；协议 S = 挡位 × 7）
+        intensity: 20
+        # 强度上限：招式计划只能被钳到更低，本机天花板就在这里
+        maxIntensity: 40
+        # 默认单次时长 ms
+        durationMs: 1500
+        # 时长上限 ms（硬顶 30000）
+        maxDurationMs: 5000
+        # 两次反馈之间的冷却秒数
+        cooldown: 10

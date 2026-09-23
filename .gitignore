@@ -1,0 +1,18 @@
+# Node.js
+node_modules/
+package-lock.json
+
+# 本地武装状态（含随机 nonce，绝不提交）
+.arm.json
+
+# 日志
+*.log
+
+# IDE / OS
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+
+# 测试产物
+test-results/
