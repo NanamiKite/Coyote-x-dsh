@@ -23,31 +23,21 @@ AI 主持场景包驱动的角色扮演剧情，用实时文字状态推进故�
 
 ## 安装（即插即用）
 
-```sh
-# git 仓库（推荐）
-dsh plugin --profile web add github:NanamiKite/Coyote-x-dsh
+dsh内插件选择github仓库安装或本地选择本地clone下来的仓库文件夹安装即可。
 
-# 本地目录
-dsh plugin --profile web add D:/path/to/Coyote-x-dsh
-```
+## 运行示例
 
-一条命令完成：pnpm 装包（自动带依赖与 webbluetooth 预编译）→ 读取 package.json 的
-`dsh.bundle.patch` → 叠入 [cordis.patch.yml](cordis.patch.yml) 配置层 → 插件以
-**裸包名** `coyote-x-dsh` 注册（host 解析与浏览器半侧挂载都要求说明符恰为包名）。
-**装完重启 profile**：Web GUI 插件管理器 → 重启按钮；或停掉 `dsh web` 进程后重新启动。
-加载后模型直接看到 `tentacle_status` 等 11 个工具（非 `mcp__` 前缀——进程内原生注册）。
-
-> 以后从 GitHub 更新：再跑一次同一条 `dsh plugin add github:NanamiKite/Coyote-x-dsh`
-> （会重新解析最新提交）→ 重启。lockfile 会锁定提交，只推不重装会一直用旧快照。
+<img src=".\docs\test.png">
 
 ## 安全配置
-
+不调小心被电飞（本人不耐电所以默认数值比较低（（（
 **推荐：在 DSH Web 的插件管理器里直接调。** Web GUI → 插件管理器 →
 本包（`coyote-x-dsh`）→ `tentacle` 行的**配置**按钮 → 六字段表单
 （强度、强度上限、单次时长、时长上限、冷却、通道）：
 
-- 表单由本包的**浏览器半侧**渲染（`lib/client.js`，手写的
-  loader-factory 产物，无构建步骤，随包一起提交）——它往插件管理器的
+<img src=".\docs\setting.jpg">
+
+- 表单由本包的**浏览器半侧**渲染——它往插件管理器的
   `plugins.row.config` 槽位注册 `coyote-x-dsh#tentacle` 这一行的配置页；
 - 六个字段在插件 Config 中标注为 `.volatile()`：保存即完整 schema
   校验（越界直接拒绝）、即持久化到 profile 的 `cordis.patch.yml`、
@@ -60,7 +50,6 @@ dsh plugin --profile web add D:/path/to/Coyote-x-dsh
 （包内，重启生效）或 profile 同 id 覆盖行（热重载）的 `config:` 里，
 由 `src/plugin/index.mjs` 导出的 Config schema 校验：**越界值直接
 拒绝，不是静默钳制**。
-这些是本机规则天花板；AI 只有工具调用权，接触不到该配置层。
 
 | 字段 | 默认 | 硬上限 | 含义 |
 | --- | --- | --- | --- |
@@ -95,8 +84,23 @@ dsh plugin --profile web add D:/path/to/Coyote-x-dsh
 
 ## 武装工作流
 
+powershell里执行：
 ```sh
-cd Coyote-x-dsh
+cd "$env:USERPROFILE\.dsh\profiles\web"
+.\node_modules\.bin\tentacle-arm.CMD on --minutes 30
+```
+或对话中让AI引导你在本机终端执行：
+
+找不到路径时怎么自己定位
+profile 名不一定是 web，换成你自己的那个就行；实在不确定就搜一下：
+
+```sh
+Get-ChildItem "$env:USERPROFILE\.dsh\profiles" -Directory | Select-Object Name
+Get-ChildItem "$env:USERPROFILE\.dsh" -Recurse -Filter arm.js -ErrorAction SilentlyContinue | Select-Object FullName
+```
+
+指令示例：
+```sh
 node bin/arm.js on --minutes 30   # 设备电脑上武装（AI 无法代替）
 node bin/arm.js status            # 查看剩余时间
 node bin/arm.js off               # 立即撤销
@@ -107,16 +111,6 @@ node bin/arm.js off               # 立即撤销
 （git clone、profile 内的包、`node_modules`）读写的都是同一文件，
 「A 处武装、B 处加载」不会错位。可用 `TENTACLE_ARM_FILE` 显式改路径。
 AI 请求执行反馈时若返回「未武装」，请自行运行上命令后再让它继续。
-
-## 快速开始（开发）
-
-```sh
-npm install
-npm test              # 24 项测试，mock 后端，无需硬件
-```
-
-需要 Node.js 20+。BLE 后端（`webbluetooth`）需要设备所在电脑支持蓝牙；
-无论进程内还是 stdio 模式，输出都必须发生在连接设备的那台机器上。
 
 ### 非 DSH 宿主：stdio MCP 回退
 
@@ -156,9 +150,6 @@ mcpServers:
 | `tentacle_stop` | 立即停止并归零。**永远可用** |
 | `tentacle_connect` / `tentacle_disconnect` | 连接 / 断开设备（连接后先归零） |
 
-AI 不能：提高上限、传任意波形字节、跳过冷却、自行武装、在未开局时改状态、
-夹带 schema 之外的参数（两宿主共用同一套参数白名单）。
-
 ## 内置场景包（原创）
 
 | id | 标题 | 风格 | 一句话设定 |
@@ -183,40 +174,6 @@ MCP 重新连接（stdio）或插件重载（进程内）即加载。`_` 开头�
 `stageGate` 可限制招式只在指定阶段可用。波形名从 `src/coyote/waveforms.js` 波形库选取。
 
 **场景包无法突破安全上限**：所有招式计划仍经过 `planMove` 与 `CoyoteSafety` 双层钳制。
-
-## 项目结构
-
-```
-Coyote-x-dsh/
-├── package.json                        # dsh.bundle.patch（配置层）+ dsh.client（浏览器半侧声明）
-├── cordis.patch.yml                    # DSH 配置层：裸包名注册 tentacle 行 + 安全上限默认值
-├── lib/client.js                       # 浏览器半侧：手写 loader-factory 产物，随包提交（无构建）
-├── bin/arm.js                          # 本地武装 CLI（唯一解锁入口）
-├── src/
-│   ├── plugin/index.mjs                # DSH 进程内插件：Config schema + 11 工具注册
-│   ├── mcp/server.js                   # stdio MCP 薄壳（非 DSH 宿主回退）
-│   ├── game/
-│   │   ├── session.js                  # 公共会话层：tools + dispatch（两宿主共用）
-│   │   ├── scenarios/
-│   │   │   ├── index.js                # 场景包加载与校验
-│   │   │   ├── builtin/*.js            # 4 个原创内置场景包
-│   │   │   └── custom/                 # 自定义场景包（*.json，_ 前缀跳过）
-│   │   ├── GameState.js                # 文字状态账本（阶段图 + 字段 schema）
-│   │   ├── FeedbackRuntime.js          # 串行写入 / 取消纪元 / 冷却 / 到时归零
-│   │   ├── rules.js                    # 招式 → 有界计划（钳制层）
-│   │   └── arm.js                      # 武装状态读写与检查器
-│   └── coyote/
-│       ├── CoyoteController.js         # BLE 控制器（复用参考项目）
-│       ├── CoyoteProtocol.js / V3.js   # 协议编解码（复用参考项目）
-│       ├── CoyoteSafety.js             # 设备层安全钳制（复用参考项目）
-│       ├── waveforms.js                # 波形库（复用参考项目）
-│       └── MockController.js           # 模拟后端（测试 / 无硬件）
-└── tests/
-    ├── core.test.js                    # 领域层 + stdio 端到端（11 项）
-    ├── plugin.test.js                  # 进程内插件（6 项，假 Cordis ctx）
-    └── client.test.js                  # 浏览器半侧（7 项，fake loader / React）
-```
-
 
 ## 许可证
 
